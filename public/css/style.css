@@ -1,0 +1,31 @@
+.toolbar {
+  width: 90%;
+  position: absolute;
+  left: 50%;
+  top: 93%;
+  transform: translate(-50%, -50%);
+}
+
+.toolbar-button {
+  width: 50px;
+  text-align: center;
+}
+
+.toolbar-button-inner:hover {
+  background-color: #f8f9fa;
+  border-radius: 50%;
+}
+
+@media screen and (min-width:544px) {
+  .toolbar {
+    width: auto;
+    position: absolute;
+    left: 38px;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .toolbar-inner {
+    flex-flow: column;
+  }
+}
