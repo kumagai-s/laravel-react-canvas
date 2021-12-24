@@ -34,7 +34,7 @@ function ToolbarComponent(props) {
             let file = e.target.files[0],
                 formData = new FormData();
             formData.append('file', file);
-            axios.post('/api/upload', formData, {
+            axios.post('/api/upload', { id: props.id, formData }, {
                 headers: {
                     'content-type': 'multipart/form-data',
                 }

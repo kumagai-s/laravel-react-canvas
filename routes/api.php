@@ -16,15 +16,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/rooms/create', [\App\Http\Controllers\API\RoomController::class, 'store']);
 
-Route::post('/draw', function (Request $request) {
-    broadcast(new \App\Events\PublicEvent($request->input('data')))->toOthers();
-});
+Route::post('/draw', [\App\Http\Controllers\API\WebSocketController::class, 'draw']);
 
-Route::post('/upload', function (Request $request) {
-    $filename = time() . '.png';
-    $request->file('file')->storeAs('/public/uploads', $filename);
-    broadcast(new \App\Events\ImageUploadedEvent($filename));
-});
+Route::post('/upload', [\App\Http\Controllers\API\WebSocketController::class, 'upload']);
 
 
 

@@ -1,8 +1,8 @@
 import React, {useEffect, useRef} from 'react'
+import {useParams} from "react-router-dom";
 import axios from "axios";
 import {Canvas} from "../lib/canvas";
 import ToolbarComponent from "./Toolbar";
-import {useParams} from "react-router-dom";
 
 function CanvasComponent() {
     let { id } = useParams(),
@@ -17,18 +17,10 @@ function CanvasComponent() {
         canvas.resize(width, height);
 
         window.Echo.channel(id)
-            .listen("PublicEvent", e => {
-                handleEvent(e);
-            })
-            .listen("ImageUploadedEvent", e => {
-                let url = 'http://localhost/storage/uploads/' + e.data.filename;
-                canvasContainer.setAttribute(
-                    'style',
-                    'background-image: url(' + url + '); background-size: 100%;'
-                );
-            })
+            .listen("DrawEvent", handleDrawEvent)
+            .listen("UploadEvent", handleUploadEvent)
 
-        function handleEvent(e) {
+        function handleDrawEvent(e) {
             let type = e.data.type,
                 offset = canvas.element.height / e.data.height;
 
@@ -41,6 +33,14 @@ function CanvasComponent() {
                     }
                 }, i * 10);
             });
+        }
+
+        function handleUploadEvent(e) {
+            let url = 'http://localhost/storage/uploads/' + e.data.filename;
+            canvasContainer.setAttribute(
+                'style',
+                'background-image: url(' + url + '); background-size: 100%;'
+            );
         }
 
         // canvas処理
@@ -103,6 +103,7 @@ function CanvasComponent() {
             isDragging = false;
 
             axios.post('/api/draw', {
+                id: id,
                 data: {
                     type: toolType,
                     points: pointData,
@@ -131,6 +132,7 @@ function CanvasComponent() {
                 <canvas id="canvas"/>
             </div>
             <ToolbarComponent
+                id={id}
                 changeToolType={changeToolType}
             />
         </div>

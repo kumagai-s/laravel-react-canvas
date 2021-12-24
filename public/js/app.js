@@ -9310,11 +9310,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/index.js");
 /* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
 /* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _lib_canvas__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../lib/canvas */ "./resources/js/lib/canvas.js");
 /* harmony import */ var _Toolbar__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./Toolbar */ "./resources/js/components/Toolbar.js");
-/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/index.js");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
 
 
@@ -9335,14 +9335,9 @@ function CanvasComponent() {
         width = canvasContainer.clientWidth,
         height = canvasContainer.clientHeight;
     canvas.resize(width, height);
-    window.Echo.channel(id).listen("PublicEvent", function (e) {
-      handleEvent(e);
-    }).listen("ImageUploadedEvent", function (e) {
-      var url = 'http://localhost/storage/uploads/' + e.data.filename;
-      canvasContainer.setAttribute('style', 'background-image: url(' + url + '); background-size: 100%;');
-    });
+    window.Echo.channel(id).listen("DrawEvent", handleDrawEvent).listen("UploadEvent", handleUploadEvent);
 
-    function handleEvent(e) {
+    function handleDrawEvent(e) {
       var type = e.data.type,
           offset = canvas.element.height / e.data.height;
       e.data.points.forEach(function (obj, i) {
@@ -9354,6 +9349,11 @@ function CanvasComponent() {
           }
         }, i * 10);
       });
+    }
+
+    function handleUploadEvent(e) {
+      var url = 'http://localhost/storage/uploads/' + e.data.filename;
+      canvasContainer.setAttribute('style', 'background-image: url(' + url + '); background-size: 100%;');
     } // canvas処理
 
 
@@ -9426,6 +9426,7 @@ function CanvasComponent() {
       if (!isDragging) return false;
       isDragging = false;
       axios__WEBPACK_IMPORTED_MODULE_1___default().post('/api/draw', {
+        id: id,
         data: {
           type: toolType,
           points: pointData,
@@ -9458,6 +9459,7 @@ function CanvasComponent() {
         id: "canvas"
       })
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_Toolbar__WEBPACK_IMPORTED_MODULE_3__["default"], {
+      id: id,
       changeToolType: changeToolType
     })]
   });
@@ -9523,7 +9525,10 @@ function ToolbarComponent(props) {
       var file = e.target.files[0],
           formData = new FormData();
       formData.append('file', file);
-      axios.post('/api/upload', formData, {
+      axios.post('/api/upload', {
+        id: props.id,
+        formData: formData
+      }, {
         headers: {
           'content-type': 'multipart/form-data'
         }
