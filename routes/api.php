@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::post('/rooms/create', [\App\Http\Controllers\API\RoomController::class, 'store']);
+
 Route::post('/draw', function (Request $request) {
     broadcast(new \App\Events\PublicEvent($request->input('data')))->toOthers();
 });
@@ -24,13 +26,15 @@ Route::post('/upload', function (Request $request) {
     broadcast(new \App\Events\ImageUploadedEvent($filename));
 });
 
-Route::post('/undo', function (Request $request) {
-    broadcast(new \App\Events\UndoEvent($request->input('data')))->toOthers();
-});
 
-Route::post('/redo', function (Request $request) {
-    broadcast(new \App\Events\RedoEvent($request->input('data')))->toOthers();
-});
+
+//Route::post('/undo', function (Request $request) {
+//    broadcast(new \App\Events\UndoEvent($request->input('data')))->toOthers();
+//});
+//
+//Route::post('/redo', function (Request $request) {
+//    broadcast(new \App\Events\RedoEvent($request->input('data')))->toOthers();
+//});
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();

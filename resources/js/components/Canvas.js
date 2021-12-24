@@ -2,69 +2,35 @@ import React, {useEffect, useRef} from 'react'
 import axios from "axios";
 import {Canvas} from "../lib/canvas";
 import ToolbarComponent from "./Toolbar";
+import {useParams} from "react-router-dom";
 
 function CanvasComponent() {
-    const canvasRef = useRef(null),
-        toolType = useRef(''),
-        undoStack = useRef([]),
-        redoStack = useRef([]),
-        socketStack = useRef([]);
+    let { id } = useParams(),
+        toolType;
 
     useEffect(() => {
-        canvasRef.current = new Canvas();
-        let canvas = canvasRef.current;
+        let canvas = new Canvas();
 
         let canvasContainer = document.getElementById('canvas-container'),
             width = canvasContainer.clientWidth,
             height = canvasContainer.clientHeight;
         canvas.resize(width, height);
 
-        window.Echo.channel("public-event")
+        window.Echo.channel(id)
             .listen("PublicEvent", e => {
                 handleEvent(e);
             })
             .listen("ImageUploadedEvent", e => {
                 let url = 'http://localhost/storage/uploads/' + e.data.filename;
-                canvasContainer.setAttribute('style', 'background-image: url(' + url + '); background-size: 100%;');
+                canvasContainer.setAttribute(
+                    'style',
+                    'background-image: url(' + url + '); background-size: 100%;'
+                );
             })
-            .listen('UndoEvent', e => {
-                socketStack.current.pop();
-                canvas.clear();
-                if (socketStack.current.length !== 0) {
-                    socketStack.current.forEach(obj => {
-                        let type = obj.type,
-                            offset = obj.offset;
-                        obj.points.forEach(point => {
-                            if (type === 'drawing') {
-                                canvas.draw(point.fx, point.fy, point.tx, point.ty, offset);
-                            } else if (type === 'eraser') {
-                                canvas.erase(point.fx, point.fy, point.tx, point.ty, offset);
-                            }
-                        });
-                    });
-                }
-                if (undoStack.current.length !== 0) {
-                    undoStack.current.forEach(obj => {
-                        let type = obj.type;
-                        obj.points.forEach(point => {
-                            if (type === 'drawing') {
-                                canvas.draw(point.fx, point.fy, point.tx, point.ty);
-                            } else if (type === 'eraser') {
-                                canvas.erase(point.fx, point.fy, point.tx, point.ty);
-                            }
-                        });
-                    });
-                }
-            })
-            .listen('RedoEvent', e => {
-                handleEvent(e);
-            });
 
         function handleEvent(e) {
             let type = e.data.type,
                 offset = canvas.element.height / e.data.height;
-
-            socketStack.current.push({ type: type, points: e.data.points, offset: offset });
 
             e.data.points.forEach(function (obj, i) {
                 setTimeout(function () {
@@ -95,7 +61,7 @@ function CanvasComponent() {
         function scrollX() { return document.documentElement.scrollLeft || document.body.scrollLeft; }
         function scrollY() { return document.documentElement.scrollTop || document.body.scrollTop; }
         function handleMouseDown(e) {
-            if (toolType.current === 'drawing' || toolType.current === 'eraser') {
+            if (toolType === 'drawing' || toolType === 'eraser') {
                 isDragging = true;
                 if (_mousedown === 'touchstart') {
                     fromX = e.touches[0].clientX - canvas.element.getBoundingClientRect().left + scrollX();
@@ -120,9 +86,9 @@ function CanvasComponent() {
                 toY = e.offsetY;
             }
 
-            if (toolType.current === 'drawing') {
+            if (toolType === 'drawing') {
                 canvas.draw(fromX, fromY, toX, toY);
-            } else if (toolType.current === 'eraser') {
+            } else if (toolType === 'eraser') {
                 canvas.erase(fromX, fromY, toX, toY);
             }
 
@@ -136,11 +102,9 @@ function CanvasComponent() {
             if (!isDragging) return false;
             isDragging = false;
 
-            undoStack.current.push({ type: toolType.current, points: pointData });
-
             axios.post('/api/draw', {
                 data: {
-                    type: toolType.current,
+                    type: toolType,
                     points: pointData,
                     height: canvas.element.height
                 }
@@ -158,74 +122,7 @@ function CanvasComponent() {
     }, []);
 
     function changeToolType(type) {
-        toolType.current = String(type);
-    }
-
-    function undo() {
-        let stackData = undoStack.current.pop();
-        if (stackData === undefined) return false;
-
-        let canvas = canvasRef.current;
-        canvas.clear();
-        if (socketStack.current.length !== 0) {
-            socketStack.current.forEach(obj => {
-                let type = obj.type,
-                    offset = obj.offset;
-                obj.points.forEach(point => {
-                    if (type === 'drawing') {
-                        canvas.draw(point.fx, point.fy, point.tx, point.ty, offset);
-                    } else if (type === 'eraser') {
-                        canvas.erase(point.fx, point.fy, point.tx, point.ty, offset);
-                    }
-                });
-            });
-        }
-        if (undoStack.current.length !== 0) {
-            undoStack.current.forEach(obj => {
-                let type = obj.type;
-                obj.points.forEach(point => {
-                    if (type === 'drawing') {
-                        canvas.draw(point.fx, point.fy, point.tx, point.ty);
-                    } else if (type === 'eraser') {
-                        canvas.erase(point.fx, point.fy, point.tx, point.ty);
-                    }
-                });
-            });
-        }
-
-        redoStack.current.push(stackData);
-
-        axios.post('/api/undo', {
-            data: {
-                height: canvas.element.height
-            }
-        });
-    }
-
-    function redo() {
-        let stackData = redoStack.current.pop();
-        if (stackData === undefined) return false;
-
-        let canvas = canvasRef.current,
-            type = stackData.type;
-        stackData.points.forEach(point => {
-            if (type === 'drawing') {
-                canvas.draw(point.fx, point.fy, point.tx, point.ty);
-            } else if (type === 'eraser') {
-                canvas.erase(point.fx, point.fy, point.tx, point.ty);
-            }
-        });
-
-        undoStack.current.push(stackData);
-
-        axios.post('/api/draw', {
-            data: {
-                type: type,
-                points: stackData.points,
-                height: canvas.element.height
-            }
-        });
-
+        toolType = String(type);
     }
 
     return (
@@ -235,8 +132,6 @@ function CanvasComponent() {
             </div>
             <ToolbarComponent
                 changeToolType={changeToolType}
-                undo={undo}
-                redo={redo}
             />
         </div>
     );

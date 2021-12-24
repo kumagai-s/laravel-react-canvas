@@ -9314,6 +9314,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _lib_canvas__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../lib/canvas */ "./resources/js/lib/canvas.js");
 /* harmony import */ var _Toolbar__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./Toolbar */ "./resources/js/components/Toolbar.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/index.js");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
 
 
@@ -9322,66 +9323,28 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
 function CanvasComponent() {
-  var canvasRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null),
-      toolType = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(''),
-      undoStack = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)([]),
-      redoStack = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)([]),
-      socketStack = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)([]);
+  var _useParams = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_5__.useParams)(),
+      id = _useParams.id,
+      toolType;
+
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    canvasRef.current = new _lib_canvas__WEBPACK_IMPORTED_MODULE_2__.Canvas();
-    var canvas = canvasRef.current;
+    var canvas = new _lib_canvas__WEBPACK_IMPORTED_MODULE_2__.Canvas();
     var canvasContainer = document.getElementById('canvas-container'),
         width = canvasContainer.clientWidth,
         height = canvasContainer.clientHeight;
     canvas.resize(width, height);
-    window.Echo.channel("public-event").listen("PublicEvent", function (e) {
+    window.Echo.channel(id).listen("PublicEvent", function (e) {
       handleEvent(e);
     }).listen("ImageUploadedEvent", function (e) {
       var url = 'http://localhost/storage/uploads/' + e.data.filename;
       canvasContainer.setAttribute('style', 'background-image: url(' + url + '); background-size: 100%;');
-    }).listen('UndoEvent', function (e) {
-      socketStack.current.pop();
-      canvas.clear();
-
-      if (socketStack.current.length !== 0) {
-        socketStack.current.forEach(function (obj) {
-          var type = obj.type,
-              offset = obj.offset;
-          obj.points.forEach(function (point) {
-            if (type === 'drawing') {
-              canvas.draw(point.fx, point.fy, point.tx, point.ty, offset);
-            } else if (type === 'eraser') {
-              canvas.erase(point.fx, point.fy, point.tx, point.ty, offset);
-            }
-          });
-        });
-      }
-
-      if (undoStack.current.length !== 0) {
-        undoStack.current.forEach(function (obj) {
-          var type = obj.type;
-          obj.points.forEach(function (point) {
-            if (type === 'drawing') {
-              canvas.draw(point.fx, point.fy, point.tx, point.ty);
-            } else if (type === 'eraser') {
-              canvas.erase(point.fx, point.fy, point.tx, point.ty);
-            }
-          });
-        });
-      }
-    }).listen('RedoEvent', function (e) {
-      handleEvent(e);
     });
 
     function handleEvent(e) {
       var type = e.data.type,
           offset = canvas.element.height / e.data.height;
-      socketStack.current.push({
-        type: type,
-        points: e.data.points,
-        offset: offset
-      });
       e.data.points.forEach(function (obj, i) {
         setTimeout(function () {
           if (type === 'drawing') {
@@ -9418,7 +9381,7 @@ function CanvasComponent() {
     }
 
     function handleMouseDown(e) {
-      if (toolType.current === 'drawing' || toolType.current === 'eraser') {
+      if (toolType === 'drawing' || toolType === 'eraser') {
         isDragging = true;
 
         if (_mousedown === 'touchstart') {
@@ -9443,9 +9406,9 @@ function CanvasComponent() {
         toY = e.offsetY;
       }
 
-      if (toolType.current === 'drawing') {
+      if (toolType === 'drawing') {
         canvas.draw(fromX, fromY, toX, toY);
-      } else if (toolType.current === 'eraser') {
+      } else if (toolType === 'eraser') {
         canvas.erase(fromX, fromY, toX, toY);
       }
 
@@ -9462,13 +9425,9 @@ function CanvasComponent() {
     function handleMouseUp(e) {
       if (!isDragging) return false;
       isDragging = false;
-      undoStack.current.push({
-        type: toolType.current,
-        points: pointData
-      });
       axios__WEBPACK_IMPORTED_MODULE_1___default().post('/api/draw', {
         data: {
-          type: toolType.current,
+          type: toolType,
           points: pointData,
           height: canvas.element.height
         }
@@ -9487,70 +9446,7 @@ function CanvasComponent() {
   }, []);
 
   function changeToolType(type) {
-    toolType.current = String(type);
-  }
-
-  function undo() {
-    var stackData = undoStack.current.pop();
-    if (stackData === undefined) return false;
-    var canvas = canvasRef.current;
-    canvas.clear();
-
-    if (socketStack.current.length !== 0) {
-      socketStack.current.forEach(function (obj) {
-        var type = obj.type,
-            offset = obj.offset;
-        obj.points.forEach(function (point) {
-          if (type === 'drawing') {
-            canvas.draw(point.fx, point.fy, point.tx, point.ty, offset);
-          } else if (type === 'eraser') {
-            canvas.erase(point.fx, point.fy, point.tx, point.ty, offset);
-          }
-        });
-      });
-    }
-
-    if (undoStack.current.length !== 0) {
-      undoStack.current.forEach(function (obj) {
-        var type = obj.type;
-        obj.points.forEach(function (point) {
-          if (type === 'drawing') {
-            canvas.draw(point.fx, point.fy, point.tx, point.ty);
-          } else if (type === 'eraser') {
-            canvas.erase(point.fx, point.fy, point.tx, point.ty);
-          }
-        });
-      });
-    }
-
-    redoStack.current.push(stackData);
-    axios__WEBPACK_IMPORTED_MODULE_1___default().post('/api/undo', {
-      data: {
-        height: canvas.element.height
-      }
-    });
-  }
-
-  function redo() {
-    var stackData = redoStack.current.pop();
-    if (stackData === undefined) return false;
-    var canvas = canvasRef.current,
-        type = stackData.type;
-    stackData.points.forEach(function (point) {
-      if (type === 'drawing') {
-        canvas.draw(point.fx, point.fy, point.tx, point.ty);
-      } else if (type === 'eraser') {
-        canvas.erase(point.fx, point.fy, point.tx, point.ty);
-      }
-    });
-    undoStack.current.push(stackData);
-    axios__WEBPACK_IMPORTED_MODULE_1___default().post('/api/draw', {
-      data: {
-        type: type,
-        points: stackData.points,
-        height: canvas.element.height
-      }
-    });
+    toolType = String(type);
   }
 
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
@@ -9562,9 +9458,7 @@ function CanvasComponent() {
         id: "canvas"
       })
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_Toolbar__WEBPACK_IMPORTED_MODULE_3__["default"], {
-      changeToolType: changeToolType,
-      undo: undo,
-      redo: redo
+      changeToolType: changeToolType
     })]
   });
 }
@@ -9604,14 +9498,10 @@ function ToolbarComponent(props) {
     var drawingButton = document.getElementById("drawingButton"),
         eraserButton = document.getElementById("eraserButton"),
         imageButton = document.getElementById("imageButton"),
-        undoButton = document.getElementById("undoButton"),
-        redoButton = document.getElementById("redoButton"),
         upload = document.getElementById('upload');
     drawingButton.addEventListener('click', handleDrawingButton);
     eraserButton.addEventListener('click', handleEraserButton);
     imageButton.addEventListener('click', handleImageButton);
-    undoButton.addEventListener('click', handleUndoButton);
-    redoButton.addEventListener('click', handleRedoButton);
     upload.addEventListener('change', handleUploadChange);
 
     function handleDrawingButton(e) {
@@ -9627,14 +9517,6 @@ function ToolbarComponent(props) {
     function handleImageButton(e) {
       upload.click();
       selectButton(e);
-    }
-
-    function handleUndoButton(e) {
-      var result = props.undo();
-    }
-
-    function handleRedoButton(e) {
-      var result = props.redo();
     }
 
     function handleUploadChange(e) {
@@ -9845,77 +9727,6 @@ if (document.getElementById('about')) {
 
 /***/ }),
 
-/***/ "./resources/js/pages/Example.js":
-/*!***************************************!*\
-  !*** ./resources/js/pages/Example.js ***!
-  \***************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
-
-
-
-
-
-
-function Example() {
-  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)('test'),
-      _useState2 = _slicedToArray(_useState, 2),
-      message = _useState2[0],
-      setMessage = _useState2[1];
-
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    window.Echo.channel('public-event').listen('PublicEvent', function (e) {
-      console.log(e);
-    });
-  }, [message]);
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
-    className: "container",
-    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
-      className: "row justify-content-center",
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
-        className: "col-md-8",
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-          className: "card",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
-            className: "card-header",
-            children: "Example Component"
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
-            className: "card-body",
-            children: message
-          })]
-        })
-      })
-    })
-  });
-}
-
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Example);
-
-if (document.getElementById('example')) {
-  react_dom__WEBPACK_IMPORTED_MODULE_1__.render( /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(Example, {}), document.getElementById('example'));
-}
-
-/***/ }),
-
 /***/ "./resources/js/pages/Room.js":
 /*!************************************!*\
   !*** ./resources/js/pages/Room.js ***!
@@ -9927,21 +9738,65 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var _components_Canvas__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../components/Canvas */ "./resources/js/components/Canvas.js");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
-
+/* harmony import */ var _components_Canvas__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../components/Canvas */ "./resources/js/components/Canvas.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
 
 
 
 function Room() {
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
-    className: "container-fluid p-0 overflow-hidden",
-    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_components_Canvas__WEBPACK_IMPORTED_MODULE_1__["default"], {})
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
+    className: "overflow-hidden",
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(_components_Canvas__WEBPACK_IMPORTED_MODULE_0__["default"], {})
   });
 }
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Room);
+
+/***/ }),
+
+/***/ "./resources/js/pages/Top.js":
+/*!***********************************!*\
+  !*** ./resources/js/pages/Top.js ***!
+  \***********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/index.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+
+
+
+function Top() {
+  var navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_1__.useNavigate)();
+
+  function handleClick(e) {
+    var isProcessing = false;
+    if (isProcessing) return false;
+    isProcessing = true;
+    axios.post('/api/rooms/create').then(function (res) {
+      navigate('/rooms/' + res.data.id);
+      isProcessing = false;
+    });
+  }
+
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", {
+    className: "vh-100 d-flex justify-content-center align-items-center",
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("button", {
+        type: "button",
+        className: "btn btn-outline-dark btn-lg",
+        onClick: handleClick,
+        children: "\u30EB\u30FC\u30E0\u3092\u4F5C\u6210"
+      })
+    })
+  });
+}
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Top);
 
 /***/ }),
 
@@ -9957,7 +9812,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
 /* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/index.js");
 /* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/index.js");
-/* harmony import */ var _pages_Example__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./pages/Example */ "./resources/js/pages/Example.js");
+/* harmony import */ var _pages_Top__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./pages/Top */ "./resources/js/pages/Top.js");
 /* harmony import */ var _pages_About__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./pages/About */ "./resources/js/pages/About.js");
 /* harmony import */ var _pages_Room__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./pages/Room */ "./resources/js/pages/Room.js");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
@@ -9975,12 +9830,12 @@ function App() {
     children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_router_dom__WEBPACK_IMPORTED_MODULE_7__.Routes, {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_7__.Route, {
         path: "/",
-        element: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_pages_Example__WEBPACK_IMPORTED_MODULE_2__["default"], {})
+        element: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_pages_Top__WEBPACK_IMPORTED_MODULE_2__["default"], {})
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_7__.Route, {
         path: "/about",
         element: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_pages_About__WEBPACK_IMPORTED_MODULE_3__["default"], {})
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_7__.Route, {
-        path: "/room",
+        path: "/rooms/:id",
         element: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_pages_Room__WEBPACK_IMPORTED_MODULE_4__["default"], {})
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_7__.Route, {
         path: "*",

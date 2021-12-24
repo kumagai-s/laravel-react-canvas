@@ -8,15 +8,11 @@ function ToolbarComponent(props) {
         let drawingButton = document.getElementById("drawingButton"),
             eraserButton = document.getElementById("eraserButton"),
             imageButton = document.getElementById("imageButton"),
-            undoButton = document.getElementById("undoButton"),
-            redoButton = document.getElementById("redoButton"),
             upload = document.getElementById('upload');
 
         drawingButton.addEventListener('click', handleDrawingButton);
         eraserButton.addEventListener('click', handleEraserButton);
         imageButton.addEventListener('click', handleImageButton);
-        undoButton.addEventListener('click', handleUndoButton);
-        redoButton.addEventListener('click', handleRedoButton);
         upload.addEventListener('change', handleUploadChange);
 
         function handleDrawingButton(e) {
@@ -32,14 +28,6 @@ function ToolbarComponent(props) {
         function handleImageButton(e) {
             upload.click();
             selectButton(e);
-        }
-
-        function handleUndoButton(e) {
-            let result = props.undo();
-        }
-
-        function handleRedoButton(e) {
-            let result = props.redo();
         }
 
         function handleUploadChange(e) {

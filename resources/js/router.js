@@ -6,7 +6,7 @@ import {
     Route,
 } from "react-router-dom";
 
-import Example from "./pages/Example";
+import Top from "./pages/Top";
 import About from "./pages/About";
 import Room from "./pages/Room";
 
@@ -14,9 +14,9 @@ function App() {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<Example/>}/>
+                <Route path="/" element={<Top/>}/>
                 <Route path="/about" element={<About/>}/>
-                <Route path="/room" element={<Room/>}/>
+                <Route path="/rooms/:id" element={<Room/>}/>
                 <Route path="*" element={<NotFound/>}/>
             </Routes>
         </Router>
